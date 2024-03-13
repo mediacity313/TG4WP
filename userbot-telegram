@@ -1,0 +1,76 @@
+<?php
+/**
+ * Plugin Name: Userbot Telegram untuk WordPress
+ * Plugin URI: https://example.com/plugins/userbot-telegram
+ * Description: Plugin ini menghubungkan WordPress dengan Telegram menggunakan userbot untuk memberikan notifikasi, mengelola komentar, dan menjalankan tugas otomatis lainnya.
+ * Version: 1.0
+ * Author: Anda
+ * Author URI: https://example.com
+ */
+
+// Fungsi untuk mengirim notifikasi ke Telegram
+function kirim_notifikasi_ke_telegram($pesan) {
+    // Ganti dengan token bot dan ID chat Telegram Anda
+    $token_bot = 'TOKEN_BOT_ANDA';
+    $id_chat = 'ID_CHAT_ANDA';
+
+    $url = "https://api.telegram.org/bot$token_bot/sendMessage?chat_id=$id_chat&text=$pesan";
+
+    // Kirim permintaan HTTP POST menggunakan wp_remote_get()
+    $response = wp_remote_get($url);
+
+    // Periksa apakah pengiriman berhasil
+    if (is_wp_error($response)) {
+        error_log('Gagal mengirim notifikasi ke Telegram: ' . $response->get_error_message());
+    }
+}
+
+// Fungsi untuk menangani komentar yang baru diposting
+function tangani_komentar_baru($komentar_ID) {
+    $komentar = get_comment($komentar_ID);
+    $judul_pos = get_the_title($komentar->comment_post_ID);
+
+    $pesan = "Komentar baru pada pos: '$judul_pos'.\n\n";
+    $pesan .= "Nama: {$komentar->comment_author}\n";
+    $pesan .= "Email: {$komentar->comment_author_email}\n";
+    $pesan .= "Komentar: {$komentar->comment_content}";
+
+    // Kirim notifikasi ke Telegram
+    kirim_notifikasi_ke_telegram($pesan);
+}
+
+// Tambahkan aksi saat komentar baru diposting
+add_action('wp_insert_comment', 'tangani_komentar_baru');
+
+// Fungsi untuk menangani perintah dari pengguna Telegram
+function tangani_perintah_telegram($perintah) {
+    // Logika untuk menangani perintah yang diterima dari pengguna Telegram
+    // Misalnya, Anda dapat menjalankan tugas tertentu sesuai dengan perintah yang diberikan
+}
+
+// URL untuk webhook yang akan dipanggil oleh Telegram
+function setup_webhook() {
+    // Ganti dengan URL situs WordPress Anda
+    $url_webhook = 'https://example.com/wp-json/userbot-telegram/v1/webhook';
+
+    // Ganti dengan token bot Anda
+    $token_bot = 'TOKEN_BOT_ANDA';
+
+    // Buat payload untuk mengatur webhook
+    $payload = array(
+        'url' => $url_webhook,
+    );
+
+    // Kirim permintaan HTTP POST menggunakan wp_remote_post()
+    $response = wp_remote_post("https://api.telegram.org/bot$token_bot/setWebhook", array(
+        'body' => $payload,
+    ));
+
+    // Periksa apakah pengaturan webhook berhasil
+    if (is_wp_error($response)) {
+        error_log('Gagal mengatur webhook: ' . $response->get_error_message());
+    }
+}
+
+// Tambahkan aksi untuk mengatur webhook saat plugin diaktifkan
+register_activation_hook(__FILE__, 'setup_webhook');
